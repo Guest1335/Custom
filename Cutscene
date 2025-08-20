@@ -1,0 +1,143 @@
+-- LocalScript: วางใน StarterPlayerScripts หรือ StarterGui
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+local char = player.Character or player.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
+
+-- มือถือเท่านั้น
+if not UserInputService.TouchEnabled then return end
+
+-- ปิดการควบคุม
+local originalWS = humanoid.WalkSpeed
+local originalJP = humanoid.JumpPower
+humanoid.WalkSpeed = 0
+humanoid.JumpPower = 0
+
+-- ซ่อน GUI ทั้งหมด
+for _, g in pairs(PlayerGui:GetChildren()) do
+	if g:IsA("ScreenGui") then
+		g.Enabled = false
+	end
+end
+
+-- ---------- สร้าง GUI ----------
+local gui = Instance.new("ScreenGui")
+gui.IgnoreGuiInset = true
+gui.Parent = PlayerGui
+
+-- พื้นสีฟ้า
+local blue = Instance.new("Frame")
+blue.Size = UDim2.new(1,0,1,0)
+blue.Position = UDim2.new(0,0,0,0)
+blue.BackgroundColor3 = Color3.fromRGB(0,170,255)
+blue.BackgroundTransparency = 0.05
+blue.Parent = gui
+
+-- ---------- คลื่นน้ำวงกลม ----------
+local function circleWave(delay)
+	local circ = Instance.new("Frame")
+	circ.Size = UDim2.new(0,50,0,50)
+	circ.Position = UDim2.new(0.5,-25,1,0)
+	circ.AnchorPoint = Vector2.new(0.5,0.5)
+	circ.BackgroundColor3 = Color3.new(1,1,1)
+	circ.BackgroundTransparency = 0
+	circ.BorderSizePixel = 0
+	circ.Parent = gui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5,0)
+	corner.Parent = circ
+
+	task.wait(delay)
+	circ.Visible = true
+
+	local t = TweenService:Create(circ, TweenInfo.new(3), {
+		Size=UDim2.new(1.5,0,1.5,0),
+		Position=UDim2.new(0.5,0,0.5,0),
+		BackgroundTransparency=1
+	})
+	t:Play()
+	t.Completed:Wait()
+	circ:Destroy()
+end
+
+for i=0,4 do
+	spawn(function()
+		circleWave(i*0.5)
+	end)
+end
+
+task.wait(5)
+
+-- ---------- ตัวอักษร GxS ----------
+local text = Instance.new("TextLabel")
+text.Size = UDim2.new(0.4,0,0.2,0)
+text.Position = UDim2.new(0.5,0,0.8,0)
+text.AnchorPoint = Vector2.new(0.5,0.5)
+text.BackgroundTransparency = 1
+text.Text = "GxS"
+text.TextScaled = true
+text.Font = Enum.Font.SourceSansBold
+text.Parent = gui
+
+-- UIGradient สำหรับสีเรนโบว์
+local grad = Instance.new("UIGradient")
+grad.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255,0,0)),
+	ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255,127,0)),
+	ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255,255,0)),
+	ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0,255,0)),
+	ColorSequenceKeypoint.new(0.8, Color3.fromRGB(0,0,255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(139,0,255))
+}
+grad.Rotation = 45
+grad.Parent = text
+
+TweenService:Create(text, TweenInfo.new(1.5), {Position=UDim2.new(0.5,0,0.5,0)}):Play()
+task.wait(1.6)
+
+-- ---------- กระจกแตก (ตัวอักษร + พื้นหลัง + คลื่นน้ำ) ----------
+local pieces = {}
+for i=1,60 do -- จำนวนเศษแหลม
+	local f = Instance.new("Frame")
+	f.Size = UDim2.new(0, math.random(10,25),0, math.random(10,25))
+	f.Position = UDim2.new(0.5,0,0.5,0)
+	f.AnchorPoint = Vector2.new(0.5,0.5)
+	f.BackgroundColor3 = Color3.new(1,1,1) -- สีขาว
+	f.BorderSizePixel = 0
+	f.Rotation = math.random(0,360)
+	f.Parent = gui
+	table.insert(pieces,f)
+end
+
+-- ซ่อนทุกอย่างก่อนแตก
+text.Visible = false
+blue.Visible = false
+
+-- Tween ให้เศษแหลมกระจาย
+for _, f in pairs(pieces) do
+	local tween = TweenService:Create(f, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position=UDim2.new(math.random(),0,math.random(),0),
+		Size=UDim2.new(0, math.random(50,150),0, math.random(50,150)),
+		BackgroundTransparency=1
+	})
+	tween:Play()
+end
+
+task.wait(1.2)
+
+-- ลบ GUI ทั้งหมด
+gui:Destroy()
+
+-- คืนค่า GUI + การควบคุม
+humanoid.WalkSpeed = originalWS
+humanoid.JumpPower = originalJP
+for _, g in pairs(PlayerGui:GetChildren()) do
+	if g:IsA("ScreenGui") then
+		g.Enabled = true
+	end
+end
